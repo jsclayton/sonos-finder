@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+
+const dgram = require('dgram');
+
+const SONOS_UPNP_URN = 'urn:schemas-upnp-org:device:ZonePlayer:1';
+const SONOS_SEARCH = ['M-SEARCH * HTTP/1.1', 'HOST: 239.255.255.250:reservedSSDPport', 'MAN: ssdp:discover', 'MX: 1', `ST: ${SONOS_UPNP_URN}`].join('\r\n');
+
+const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+
+const timeout = setTimeout(close, 10000);
+
+function close(err) {
+
+  clearTimeout(timeout);
+  if (socket) {
+    socket.close();
+  }
+  if (err) {
+    console.error(err);
+  }
+}
+
+try {
+  socket.bind(1905);
+  socket.once('error', close);
+  socket.once('listening', () => { socket.send(SONOS_SEARCH, 1900, '239.255.255.250'); });
+  socket.on('message', (msg, rinfo) => {
+
+    console.log('=== MESSAGE =============================================================')
+    console.log(msg.toString());
+  });
+} catch (err) {
+  close(err);
+}
